@@ -1,0 +1,8 @@
+#ignore folder:
+.vscode/
+backup/
+
+#ignore file:
+notesheet.txt
+*.exe
+
