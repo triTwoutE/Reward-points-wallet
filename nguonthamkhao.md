@@ -1,2 +1,2 @@
-Mã nguồn md5 tham khảo:
-https://github.com/stbrumme/hash-library
+Create a bank account:
+https://www.youtube.com/watch?v=8mZWUnb7FPU
