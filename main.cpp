@@ -79,6 +79,7 @@ int main() {
                     std::cout << "Dang luu du lieu...\n";
                     dbManager.saveUsers(users);
                     dbManager.saveWallets(wallets);
+                    dbManager.backupData();
                     std::cout << "Tam biet!\n";
                     system("pause");
                     return 0;
