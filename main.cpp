@@ -1,81 +1,180 @@
-#include "user.h"
+﻿#include <iostream>
+#include <vector>
+#include <string>
 #include <cstdlib>
+#include <stdexcept>
+#include <iomanip> // <<< THÊM VÀO: Thư viện để định dạng bảng (setw)
 
-using namespace std;
+#include "User.h"
+#include "Wallet.h"
+#include "DatabaseManager.h"
+#include "AuthManager.h"
+#include "WalletManager.h"
+#include "OTPManager.h"
 
-void menu(const user& currentUser) {
-    cout << "\n===== MAIN MENU =====\n";
-    cout << "1. Create new account (self-registration)\n";
-    cout << "2. Log in\n";
-    if (currentUser.getrole() == "admin") {
-        cout << "3. Create account for someone else (admin only)\n";
-        cout << "4. Update user info for someone else (admin only)\n";
-        cout << "5. View all users\n";
-    }
-    cout << "q. Quit\n> ";
+void showMainMenu() {
+    std::cout << "\n--- HE THONG VI DIEM THUONG NHOM 3 ---\n";
+    std::cout << "1. Dang Nhap\n";
+    std::cout << "2. Dang Ky\n";
+    std::cout << "3. Thoat\n";
+    std::cout << "Lua chon cua ban: ";
 }
 
-void clearScreen() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+void showUserMenu(const User& user) {
+    std::cout << "\n--- XIN CHAO, " << user.fullName << " ---\n";
+    std::cout << "1. Xem Thong Tin Vi & Lich Su Giao Dich\n";
+    std::cout << "2. Chuyen Diem\n";
+    std::cout << "3. Cap Nhat Thong Tin Ca Nhan\n";
+    std::cout << "4. Doi Mat Khau\n";
+    std::cout << "5. Dang Xuat\n";
+    std::cout << "Lua chon cua ban: ";
 }
+
+void showAdminMenu(const User& user) {
+    showUserMenu(user);
+    std::cout << "--- CHUC NANG QUAN LY ---\n";
+    std::cout << "6. Xem Danh Sach Tat Ca Nguoi Dung\n";
+    std::cout << "7. Tao Tai Khoan Moi Cho Nguoi Dung\n";
+    std::cout << "8. Chinh Sua Thong Tin Nguoi Dung Khac\n";
+    std::cout << "9. Kiem Tra Vi Tong\n";
+    std::cout << "10. Phat Diem Tu Vi Tong\n";
+    std::cout << "11. Xem Lich Su Giao Dich Vi Tong\n";
+    std::cout << "Lua chon cua ban: ";
+}
+
 
 int main() {
-    backupdata();
+    try {
+        std::vector<User> users;
+        std::vector<Wallet> wallets;
 
-    user currentUser;
-    string userinput = "";
-    clearScreen();
-    menu(currentUser);
-    getline(cin, userinput);
+        DatabaseManager dbManager;
+        OTPManager otpManager;
+        AuthManager authManager(users, otpManager);
+        WalletManager walletManager(wallets, otpManager);
 
-    while (userinput != "q" && userinput != "Q") {
-        clearScreen();
+        dbManager.loadUsers(users);
+        dbManager.loadWallets(wallets);
 
-        if (userinput == "1") {
-            cout << "\n=== Self Registration ===\n";
-            user newUser;
-            newUser.setfullname();
-            newUser.setemail();
-            newUser.setusername();
-            newUser.setpwd();
-            newUser.setwalletID("user" + to_string(time(NULL)));
-            newUser.setrole("user"); // luôn là user
-            newUser.save();
-        } else if (userinput == "2") {
-            cout << "\n=== Login ===\n";
-            if (login(currentUser)) {
-                cout << "Logged in successfully as: " << currentUser.getusername()
-                     << " (" << currentUser.getrole() << ")\n";
-            } else {
-                cout << "Login failed. Try again.\n";
+        User* currentUser = nullptr;
+        int choice;
+
+        while (true) {
+            if (currentUser == nullptr) {
+                showMainMenu();
+                std::cin >> choice;
+                if (std::cin.fail()) {
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                    choice = 0;
+                }
+                switch (choice) {
+                case 1: currentUser = authManager.login(); break;
+                case 2: {
+                    bool success = authManager.registerUser();
+                    if (success) { walletManager.createWalletForUser(users.back().username); }
+                    break;
+                }
+                case 3:
+                    std::cout << "Dang luu du lieu...\n";
+                    dbManager.saveUsers(users);
+                    dbManager.saveWallets(wallets);
+                    std::cout << "Tam biet!\n";
+                    system("pause");
+                    return 0;
+                default:
+                    std::cout << "Lua chon khong hop le. Vui long chon lai.\n";
+                    break;
+                }
             }
-        } else if (userinput == "3" && currentUser.getrole() == "admin") {
-            cout << "\n=== Create Account for Another User ===\n";
-            user newUser;
-            newUser.setfullname();
-            newUser.setemail();
-            newUser.setusername();
-            newUser.setpwd();
-            newUser.setwalletID("user" + to_string(time(NULL)));
-            newUser.setrole();  // cho phép chọn admin/user
-            newUser.save();
-        } else if (userinput == "4" && currentUser.getrole() == "admin") {
-            cout << "\n=== Update User Info (Admin Input) ===\n";
-            currentUser.updateUserInfo();
-        } else if (userinput == "5" && currentUser.getrole() == "admin") {
-            currentUser.listAllUsers();
-        } else {
-            cout << "Invalid option or insufficient permission.\n";
-        }
+            else {
+                if (currentUser->role == UserRole::ADMIN) {
+                    showAdminMenu(*currentUser);
+                }
+                else {
+                    showUserMenu(*currentUser);
+                }
 
-        cout << endl;
-        menu(currentUser);
-        getline(cin, userinput);
+                std::cin >> choice;
+                if (std::cin.fail()) {
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                    choice = 0;
+                }
+
+                switch (choice) {
+                case 1: walletManager.showWalletInfo(currentUser->username); break;
+                case 2: walletManager.processTransfer(currentUser->username); break;
+                case 3: authManager.updateUserInfo(*currentUser); break;
+                case 4: authManager.changePassword(*currentUser); break;
+                case 5: currentUser = nullptr; std::cout << "Da dang xuat.\n"; break;
+                default:
+                    if (currentUser->role == UserRole::ADMIN) {
+                        switch (choice) {
+                            // <<< CASE 6 ĐƯỢC THAY THẾ HOÀN TOÀN ĐỂ HIỂN THỊ BẢNG CHI TIẾT >>>
+                        case 6:
+                        {
+                            std::cout << "\n--- DANH SACH NGUOI DUNG CHI TIET ---\n";
+                            // In tiêu đề cho bảng
+                            std::cout << std::left
+                                << std::setw(15) << "Username"
+                                << std::setw(25) << "Ho Ten"
+                                << std::setw(25) << "Email"
+                                << std::setw(15) << "So DT"
+                                << std::setw(15) << "Ma Vi"
+                                << std::setw(10) << "Vai Tro" << std::endl;
+                            std::cout << std::string(105, '-') << std::endl;
+
+                            // Duyệt qua từng người dùng để in thông tin
+                            for (const auto& u : users) {
+                                std::string walletId = "N/A";
+                                // Tìm ví tương ứng để lấy ID
+                                for (const auto& w : wallets) {
+                                    if (w.ownerUsername == u.username) {
+                                        walletId = w.walletId;
+                                        break;
+                                    }
+                                }
+                                std::cout << std::left
+                                    << std::setw(15) << u.username
+                                    << std::setw(25) << u.fullName
+                                    << std::setw(25) << u.email
+                                    << std::setw(15) << u.phone
+                                    << std::setw(15) << walletId
+                                    << std::setw(10) << (u.role == UserRole::ADMIN ? "ADMIN" : "NORMAL") << std::endl;
+                            }
+                        }
+                        break;
+                        case 7: {
+                            bool success = authManager.adminCreateUser();
+                            if (success) {
+                                walletManager.createWalletForUser(users.back().username);
+                            }
+                            break;
+                        }
+                        case 8: authManager.adminUpdateUser(); break;
+                        case 9: walletManager.adminCheckMasterWallet(*currentUser); break;
+                        case 10: walletManager.adminDistributeFromMaster(*currentUser); break;
+                        case 11: walletManager.adminShowMasterWalletHistory(*currentUser); break;
+                        default: std::cout << "Lua chon khong hop le. Vui long chon lai.\n"; break;
+                        }
+                    }
+                    else {
+                        std::cout << "Lua chon khong hop le. Vui long chon lai.\n";
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "LOI NGHIEM TRONG: Mot loi runtime da xay ra: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cerr << "LOI NGHIEM TRONG: Mot loi khong xac dinh da xay ra." << std::endl;
     }
 
-    return 0;
+    std::cout << "Chuong trinh da ket thuc do loi. Nhan phim bat ky de dong cua so." << std::endl;
+    system("pause");
+    return 1;
 }
