@@ -1,33 +1,53 @@
 #ifndef user_h_
-#define user_h_h
+#define user_h_
+
 #include <bits/stdc++.h>
-#include <fstream> //FILE
-#include <ctime> //TIME
-#include <sstream> //string
+#include <fstream>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
 class user {
-    private:
-        string username, passwordHash, fullname, email, walletID;
-    public:
-        user();
-        void save();
-        void setfullname();
-        void setemail();
-        void setusername();
-        void setpwd();
-        void setwalletID();
+private:
+    string username, passwordHash, fullname, email, walletID;
 
+public:
+    string role = "user";
+
+    // Constructor
+    user();
+
+    // Setters
+    void setfullname();
+    void setfullname(string);
+    void setemail();
+    void setemail(string);
+    void setusername();
+    void setusername(string);
+    void setpwd();
+    void setwalletID(string);
+    void setwalletID_direct(string);
+    void setrole();             // nhập từ người dùng
+    void setrole(string);       // gán trực tiếp
+
+    // Getters
+    string getusername() const { return username; }
+    string getrole() const { return role; }
+
+    // Core methods
+    void save();
+    void updateUserInfo();
+    void listAllUsers();
 };
 
-string hashstring (string);
+// Global functions
+string hashstring(string);
 bool checkusername(string);
 bool checkpassword(string);
-bool checkemail(string);
-void createuser();
+bool login(user &currentUser);
 void backupdata();
-int search_username(string,string);
-void login();
+int search_username(string, string);
 
 #endif
